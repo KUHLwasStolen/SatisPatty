@@ -39,7 +39,7 @@ public void onBounce(double i, Graphics g) {
 }
 ~~~
 This cycles through the three base colors of the 8-bit RGB-system.  
-**Note:** This code requires you to have the initial color of the line set to one of the three.  
+**Note:** This code requires you to have at least one RGB value set to 255 or else it will do nothing.  
 If you do not want to do this you can change the last "else if" to something like this:
 ~~~
 ... } else {

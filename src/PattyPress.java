@@ -2,7 +2,7 @@
  * Description: Core of the project. Contains the basic loop and the main method to run the project. The engine so to say.
  * Creator: @KUHLwasStolen
  * Editor(s): @KUHLwasStolen
- * Version: V1.0.2
+ * Version: V1.1.0
  * License: GPLv3
 */
 
@@ -12,20 +12,22 @@ import java.io.IOException;
 
 public class PattyPress extends JFrame {
 
-    public static int WIDTH, HEIGHT;
+    public final int WIDTH, HEIGHT;
     public int x, y, xVel, yVel, xOrigin, yOrigin;
     public int red, green, blue;
     public int dX, dY, dR, dG, dB; // d... meaning delta... this is here to "change direction" and intended to be 1, -1 or 0
     public int delay; // the time in ms that the Thread sleeps for each loop
+    public Color backgroundColor;
+    
     // Determines how often the line is allowed to bounce off the borders
     // bounces = 0 means pattern is halted when the line first leaves the screen
     public int bounces;
 
+    // Some things need to be disabled for the saving of the screenshot to work
+    public boolean savingRun = false;
+
     public PattyPress(String title) {
         super(title); // super constructor for JFrame
-
-        dR = dG = dB = 0;
-        dX = dY = 1;
 
         // Gets the full screen size
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
@@ -39,7 +41,7 @@ public class PattyPress extends JFrame {
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false); // to avoid weird interactions
-        setLocationRelativeTo(null);
+        setLocationRelativeTo(null); // center of the screen
 
         // Disables annoying bars, rounded edges etc; makes the patterns more enjoyable
         setUndecorated(true);
@@ -47,8 +49,19 @@ public class PattyPress extends JFrame {
         setVisible(true);
     }
 
+    // Called ONCE BEFORE the loop starts
     public void setup(Graphics g) {
+        backgroundColor = new Color(30, 30, 30);
+
+        delay = 5;
         bounces = 26;
+
+        dR = dG = dB = 0;
+        dX = dY = 1;
+
+        // This is where your pattern will start
+        xOrigin = (int)(WIDTH / 2);
+        yOrigin = (int)(HEIGHT / 2);
 
         xVel = 2;
         yVel = 2;
@@ -59,6 +72,7 @@ public class PattyPress extends JFrame {
         g.setColor(new Color(red,green,blue));
     }
 
+    // Gets called in EVERY iteration of the loop
     public void loop(double i, Graphics g) {
         g.setColor(new Color(red+=dR, green+=dG, blue+=dB));
 
@@ -89,33 +103,32 @@ public class PattyPress extends JFrame {
         }
     }
 
+    // Gets called ONLY when hitting a border/corner
     public void onBounce(double i, Graphics g) {
         // Draws a little green circle around the "impact"
         g.setColor(new Color(0, 255, 0));
         g.drawOval(x-5, y-5, 10, 10);
     }
 
+    // This is where the actual loop lives; gets automatically called when creating a new PattyPress
     public void paint(Graphics g) {
         super.paint(g);
-
-        // Fills the background with a color of choice
-        g.setColor(new Color(30, 30, 30));
-        g.fillRect(0, 0, WIDTH, HEIGHT);
-
-        // This is where your pattern will start
-        xOrigin = (int)(WIDTH / 2);
-        yOrigin = (int)(HEIGHT / 2);
-
-        x = xOrigin;
-        y = yOrigin;
-
-        delay = 5;
 
         // Collision detection related variables
         int checkValue;
         Point oldXY = new Point(Integer.MIN_VALUE, Integer.MIN_VALUE); // somewhere way off the screen to avoid accidental errors
 
-        setup(g);
+        if(!savingRun) setup(g);
+
+        // Saves the initial color of the line that was set in setup() 
+        //Then fills the background with a color of choice (also set in setup())
+        Color initColor = g.getColor();
+        g.setColor(backgroundColor);
+        g.fillRect(0, 0, WIDTH, HEIGHT);
+        g.setColor(initColor);
+
+        x = xOrigin;
+        y = yOrigin;
 
         // i is a double because it allows for easier calculations when using functions like Math.sin() dependent on i
         for(double i = 0; !checkOutOfBounds(x, y); i++) {
@@ -165,16 +178,27 @@ public class PattyPress extends JFrame {
 
         }
 
-        // minimize window and wait for user to close it by terminal (can take a look at final pattern now)
-        this.setState(JFrame.ICONIFIED);
-        System.out.print("Pattern finished. Press <ENTER> to continue.");
-        try {
-            System.in.read();
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(!savingRun) {
+            // Minimize window and wait for user to make a decision
+            this.setState(JFrame.ICONIFIED);
+            System.out.printf("%sPattern finished. You can now admire your creation.%s\n", PattyConsole.BRIGHT_MAGENTA, PattyConsole.RESET);
+            System.out.printf("After admiring: Do you want to save your pattern as a \'screenshot\'?\n");
+            System.out.printf("[%sy%s/%sn%s] %s(default: no)%s\n", PattyConsole.GREEN, PattyConsole.RESET, PattyConsole.RED, PattyConsole.RESET, PattyConsole.GRAY, PattyConsole.RESET);
+            
+            // Read user input and save pattern if desired
+            try {
+                int input = System.in.read();
+                if(input == 'y' || input == 'Y') {
+                    System.out.println(PattySaver.savePattern(this));
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            // Closes window automatically after user input
+            System.exit(0);
         }
-        System.exit(0);
-        
+
     }
 
     public static void main(String[] args) {

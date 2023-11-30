@@ -25,7 +25,7 @@ If you have added a new file use following template at the very top of it:
  * Description: A short and simple description of the purpose/use of this file  
  * Creator: @[your GitHub tag]  
  * Editor(s): @[your tag]; @[other people who have worked on this]; ...  
- * Version: V[version of the file (probably V1.0)]  
+ * Version: V[version of the file (probably V1.0.0)]  
  * License: GPLv3  
 */ 
 ~~~ 
